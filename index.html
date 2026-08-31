@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>26-27-1-Cressy课表</title>
+<style>
+  :root{
+    --bg:#EDF1F4;      /* 最浅蓝（Cressy蓝色系），近白背景 */
+    --card:#ffffff;
+    --ink:#1f2329;
+    --muted:#5a6b7d;
+    --line:#dbe4ea;
+    --accent:#529CAF;  /* 蓝色系强调（Cressy最深蓝） */
+    --teach:#529CAF;   /* 任教主题（fallback） */
+    --phd:#529CAF;     /* 在读主题（fallback） */
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;
+    overscroll-behavior:none;
+  }
+  /* ---------- 顶部 ---------- */
+  header{
+    position:sticky;top:0;z-index:30;
+    background:linear-gradient(135deg,#529CAF,#76B5C8);
+    color:#fff;
+    padding:12px 14px 10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.12);
+  }
+  header h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+  header .sub{font-size:11px;opacity:.85;margin-top:2px}
+  /* 控制行：周次切换 + 筛选 各占一半 */
+  .control-row{
+    display:flex;align-items:stretch;gap:8px;margin-top:10px;
+  }
+  /* 周次切换 */
+  .weekbar{
+    display:flex;align-items:center;gap:4px;
+    flex:1;min-width:0;
+    background:rgba(255,255,255,.16);
+    border-radius:10px;padding:4px 6px;
+  }
+  .weekbar .wk-btn{
+    width:32px;height:34px;flex:none;
+    border:none;border-radius:8px;
+    background:rgba(255,255,255,.22);color:#fff;
+    font-size:18px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .weekbar .wk-btn:active{transform:scale(.94)}
+  .weekbar .wk-label{
+    flex:1;text-align:center;font-weight:700;font-size:14px;
+    letter-spacing:.5px;white-space:nowrap;
+  }
+  /* 筛选 */
+  .filters{
+    display:flex;gap:6px;flex:1;min-width:0;
+  }
+  .filter{
+    flex:1;padding:8px 0;border:none;border-radius:9px;
+    background:rgba(255,255,255,.2);color:#fff;
+    font-size:13px;font-weight:600;cursor:pointer;
+    transition:background .15s;
+  }
+  .filter.active{
+    background:#fff;color:#529CAF;
+    box-shadow:0 1px 4px rgba(0,0,0,.15);
+  }
+
+  /* ---------- 课表主体 ---------- */
+  .wrap{
+    padding:10px 6px 90px;
+  }
+  table.tb{
+    border-collapse:separate;border-spacing:0;
+    width:100%;
+    table-layout:fixed;
+  }
+  .tb th{
+    background:#fff;color:#4b5563;
+    font-size:12px;font-weight:700;padding:6px 2px;
+    border-bottom:2px solid var(--line);
+    text-align:center;
+  }
+  .tb th:first-child{width:34px}   /* 时间列固定窄 */
+  .tb th .day{display:block}
+  .tb th .today{color:#529CAF}
+  .tb th .is-today{
+    display:inline-block;background:#529CAF;color:#fff;
+    border-radius:20px;padding:1px 8px;
+  }
+  /* 表头两行：月份+星期 / 日期数字（超级课程表式） */
+  .tb .hdr-week th{border-bottom:1px solid var(--line)}
+  .tb .hdr-week .hdr-month{color:#529CAF;font-size:11px;font-weight:800;vertical-align:middle}
+  .tb .hdr-date th{padding:1px 2px 4px;border-bottom:2px solid var(--line)}
+  .tb .hdr-date .hdr-empty{background:#fff}
+  .tb .hdr-date .dnum{display:inline-block;color:#529CAF;font-size:11px;font-weight:700}
+  .tb .hdr-date .dnum.is-today{
+    background:#529CAF;color:#fff;border-radius:50%;
+    width:18px;height:18px;line-height:18px;text-align:center;
+  }
+  .tb td.time{
+    width:34px;font-size:9px;color:#9aa1ac;
+    text-align:center;vertical-align:middle;font-weight:600;
+    background:#fff;border-bottom:1px solid #f0f1f3;
+    padding:0 2px 0 0;
+  }
+  .tb td.time b{display:block;font-size:10px;color:#6b7280}
+  .tb td{
+    border:1px solid var(--line);background:#fdfdfe;
+    vertical-align:top;padding:1px;height:92px;
+    position:relative;
+  }
+  /* 空课程 */
+  .tb td.empty{background:repeating-linear-gradient(45deg,#fafafa,#fafafa 6px,#f6f6f7 6px,#f6f6f7 12px)}
+  /* 同一格双身份并排 */
+  .split{display:flex;width:100%;height:100%}
+  .split .half{flex:1;min-width:0;height:100%}
+  .split .half+.half{border-left:1px dashed rgba(255,255,255,.5)}
+  /* 课块 */
+  .course{
+    border-radius:5px;padding:3px 3px;
+    height:100%;overflow:hidden;
+    position:relative;
+    display:flex;flex-direction:column;justify-content:center;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);
+    min-height:100%;
+  }
+  /* 内容区文字排版 */
+  .course .txt{
+    border-radius:4px;padding:2px 2px;
+    display:flex;flex-direction:column;gap:1px;
+    margin:1px;
+    min-width:0;
+    color:inherit; /* 继承同系深色字 */
+  }
+  /* 任教 / 在读：浅色底 + 同系深字 */
+  /* 在读（波点格子）：文字加白色不透明底，衬托深字、盖住波点更突出 */
+  .course.teach .txt{background:#fff}
+  .course.phd .txt{background:#fff}
+  .course .nm{font-size:9.5px;font-weight:700;line-height:1.2;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .course .meta{font-size:7.5px;opacity:.85;line-height:1.25;word-break:break-all}
+  /* 角标（在读：蓝色系；任教：Auburn红系） */
+  .course .tag{
+    position:absolute;top:3px;right:3px;
+    font-size:8px;font-weight:800;
+    background:rgba(46,110,129,.18);color:#2E6E81;border-radius:3px;
+    padding:0 4px;line-height:14px;
+  }
+  .course.teach .tag{background:rgba(170,51,60,.15);color:#8A2931}
+  /* 任教：浅红底 + 小三角（Auburn深色淡化） */
+  .course.teach{background:var(--teach)}
+  .course.teach::before{
+    content:"";position:absolute;top:0;left:0;
+    border-style:solid;border-width:0 0 14px 14px;border-color:transparent transparent rgba(138,41,49,.15) transparent;
+  }
+  /* 在读：小点点（纹理由 JS 内联 background 控制） */
+  .course.phd{background-color:var(--phd)}
+  .course.gray{filter:grayscale(.6) opacity(.45)}
+  /* 格子可点击 */
+  .course{cursor:pointer}
+
+  /* ===== 课程详情弹窗：白底 + 身份主色调 =====
+     在读(博士)=蓝色系（默认）；任职(任教)=黄色系（.modal.teach） */
+  .overlay{
+    position:fixed;inset:0;background:rgba(46,110,129,.30);
+    opacity:0;visibility:hidden;transition:opacity .18s;z-index:99;
+  }
+  .overlay.show{opacity:1;visibility:visible}
+  .modal{
+    --m-ink:#2E6E81;      /* 主文字深蓝 */
+    --m-soft:#76B5C8;     /* 辅助浅蓝 */
+    --m-accent:#529CAF;   /* 标签/强调蓝 */
+    --m-line:#EAF4F8;     /* 分隔线浅蓝 */
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
+    background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(46,110,129,.25);
+    width:min(320px,86vw);z-index:100;
+    opacity:0;visibility:hidden;transition:all .18s;
+  }
+  /* 任职：Auburn红色系主色调，覆盖变量 */
+  .modal.teach{
+    --m-ink:#8A2931;      /* 主文字暗赤褐 */
+    --m-soft:#D7655F;     /* 辅助浅红 */
+    --m-accent:#AA333C;   /* 标签Auburn赤褐 */
+    --m-line:#F6CDCB;     /* 分隔线浅红 */
+    box-shadow:0 12px 40px rgba(170,51,60,.28);
+  }
+  .modal.show{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+  .modal-close{
+    position:absolute;top:10px;right:14px;border:none;background:none;
+    font-size:24px;line-height:1;color:var(--m-soft);cursor:pointer;z-index:2;padding:4px;
+  }
+  .modal-close:active{color:var(--m-ink)}
+  .modal-body{padding:22px 20px 20px;}
+  .m-title{font-size:16px;font-weight:800;color:var(--m-ink);line-height:1.35;padding-right:22px;margin-bottom:6px}
+  .m-tag{display:inline-block;font-size:10px;font-weight:800;color:#fff;background:var(--m-accent);border-radius:4px;padding:1px 7px;margin-bottom:10px}
+  .m-rows{margin-top:2px;border-top:1px solid var(--m-line);padding-top:10px}
+  .m-row{display:flex;align-items:baseline;gap:10px;padding:4px 0;font-size:13px}
+  .m-row .k{flex:0 0 46px;color:var(--m-soft);font-size:12px;font-weight:700}
+  .m-row .v{color:var(--m-ink);line-height:1.4;word-break:break-all}
+
+  /* ---------- 底部悬浮说明 ---------- */
+  .foot{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:#fff;border-top:1px solid var(--line);
+    padding:8px 14px;font-size:10.5px;color:var(--muted);
+    display:flex;align-items:center;gap:10px;justify-content:center;
+  }
+  .foot .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+  .nolec{
+    text-align:center;color:#c0c6cf;font-size:12px;padding:24px 0;
+  }
+  /* ---------- 学期总览（甘特图） ---------- */
+  .semester{margin:10px;font-size:9px}
+  .sem-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .sem{border-collapse:collapse;width:100%;table-layout:fixed}
+  .sem th,.sem td{border:1px solid #eef0f3;text-align:center;padding:0}
+  .sem .sem-col{background:#fff;color:#9aa1ac;font-weight:700;padding:4px 2px;border-bottom:2px solid var(--line)}
+  .sem .sem-rowhead{background:#fafbfc;color:#4b5563;font-weight:700;padding:5px 3px;text-align:center;white-space:nowrap;width:78px;border-right:2px solid var(--line)}
+  .sem .sem-rowhead small{display:block;color:#9aa1ac;font-weight:500;font-size:8px}
+  .sem td.sem-cell{height:30px;position:relative;background:#fff}
+  .sem .bar{
+    position:absolute;top:2px;bottom:2px;left:3px;right:3px;
+    border-radius:3px;padding:1px 3px;overflow:hidden;white-space:nowrap;
+    font-size:7.5px;line-height:1.15;text-align:center;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05);
+  }
+  .sem-hint{color:#9aa1ac;font-size:9px;text-align:center;padding-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>26-27-1-Cressy课表</h1>
+  <div class="sub">重庆城科 · 任教 ｜ 重庆工商 · 在读博士</div>
+
+  <!-- 周次切换 + 筛选 同一行 -->
+  <div class="control-row">
+    <div class="weekbar">
+      <button class="wk-btn" id="wkPrev">‹</button>
+      <div class="wk-label">第 <span id="wkShow">1</span> 周</div>
+      <button class="wk-btn" id="wkNext">›</button>
+    </div>
+    <div class="filters">
+      <button class="filter active" data-f="all" id="fAll">全部</button>
+      <button class="filter" data-f="teach" id="fTeach">只看任教</button>
+      <button class="filter" data-f="phd" id="fPhd">只看在读</button>
+      <button class="filter" id="fSem" style="margin-left:6px">学期</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap" id="wrap">
+  <table class="tb" id="tb">
+    <thead>
+      <tr class="hdr-week">
+        <th class="hdr-month" id="hdrMonth"></th>
+        <th><span class="day">周一</span></th>
+        <th><span class="day">周二</span></th>
+        <th><span class="day">周三</span></th>
+        <th><span class="day">周四</span></th>
+        <th><span class="day">周五</span></th>
+        <th><span class="day">周六</span></th>
+      </tr>
+      <tr class="hdr-date">
+        <th class="hdr-empty"></th>
+        <th><span class="dnum" data-d="1"></span></th>
+        <th><span class="dnum" data-d="2"></span></th>
+        <th><span class="dnum" data-d="3"></span></th>
+        <th><span class="dnum" data-d="4"></span></th>
+        <th><span class="dnum" data-d="5"></span></th>
+        <th><span class="dnum" data-d="6"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tby"></tbody>
+  </table>
+  <div class="nolec" id="nolec" style="display:none">本周没有课程 🎉</div>
+</div>
+
+<!-- 学期总览（甘特图式）：横轴=周次，纵轴=星期×节次，课程横条拉通覆盖周 -->
+<div class="semester" id="semester" style="display:none">
+  <div class="sem-scroll">
+    <table class="sem" id="sem"></table>
+  </div>
+  <div class="sem-hint">横轴=第1~16周 ｜ 每条色带=一门课在该周次段的开设 ｜ 点色带看详情</div>
+</div>
+
+<div class="foot">
+  <span><span class="dot" style="background:#529CAF"></span>今天高亮</span>
+  <span>第1周=9月7日</span>
+</div>
+
+<!-- 课程详情弹窗 -->
+<div class="overlay" id="overlay" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <button class="modal-close" id="modalClose" onclick="closeModal()">&times;</button>
+  <div class="modal-body" id="modalBody"></div>
+</div>
+
+<script>
+// ===== AUTO-GEN: 改课请编辑 courses.csv 后重新运行 generate_timetable.py =====
+const COURSE_DATA = [
+ {
+  "kind": "phd",
+  "day": 1,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "高级宏观经济学",
+  "weeks": "2-13",
+  "room": "田家炳205",
+  "classes": "",
+  "type": "",
+  "teachers": "孙建/王静/姜鑫"
+ },
+ {
+  "kind": "phd",
+  "day": 2,
+  "rows": [
+   1,
+   2
+  ],
+  "slot": "第2-4节",
+  "name": "高级管理研究方法",
+  "weeks": "2-12",
+  "room": "明智楼110205",
+  "classes": "",
+  "type": "",
+  "teachers": "李爱国/郑月龙/杨柏"
+ },
+ {
+  "kind": "phd",
+  "day": 2,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "英语",
+  "weeks": "9-16",
+  "room": "明智楼110415",
+  "classes": "",
+  "type": "",
+  "teachers": "吴庸/罗志高"
+ },
+ {
+  "kind": "phd",
+  "day": 3,
+  "rows": [
+   1,
+   2
+  ],
+  "slot": "第1-4节",
+  "name": "中国马克思主义与当代",
+  "weeks": "2-10",
+  "room": "田家炳306",
+  "classes": "",
+  "type": "",
+  "teachers": "冉梨/宋明江/詹宏伟"
+ },
+ {
+  "kind": "phd",
+  "day": 4,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-7节",
+  "name": "高级管理研究方法",
+  "weeks": "7-11",
+  "room": "明智楼110205",
+  "classes": "",
+  "type": "",
+  "teachers": "周莉"
+ },
+ {
+  "kind": "phd",
+  "day": 5,
+  "rows": [
+   1,
+   2
+  ],
+  "slot": "第1-4节",
+  "name": "高级微观经济学",
+  "weeks": "2-13",
+  "room": "田家炳205",
+  "classes": "",
+  "type": "",
+  "teachers": "刘斌/吴燕/邓文静"
+ },
+ {
+  "kind": "phd",
+  "day": 6,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "学术诚信与科研论文写作",
+  "weeks": "6-9",
+  "room": "明智楼110306",
+  "classes": "",
+  "type": "",
+  "teachers": "夏宇/王兆林/鄂施璇"
+ },
+ {
+  "kind": "teach",
+  "day": 1,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "HR大数据分析与可视化",
+  "weeks": "14",
+  "room": "A6203",
+  "classes": "24人力01班(28)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 2,
+  "rows": [
+   4
+  ],
+  "slot": "第7-8节",
+  "name": "人力资源管理前沿理论与实务",
+  "weeks": "4",
+  "room": "A6406",
+  "classes": "23人力01班(40)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 2,
+  "rows": [
+   5
+  ],
+  "slot": "第9-10节",
+  "name": "应用统计学",
+  "weeks": "1-4;6-13",
+  "room": "A主407",
+  "classes": "25国贸[1-3]班+菁英班(92)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 3,
+  "rows": [
+   1
+  ],
+  "slot": "第1-2节",
+  "name": "应用统计学",
+  "weeks": "12-15",
+  "room": "A主312",
+  "classes": "25国贸[1-3]班+菁英班(92)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 3,
+  "rows": [
+   2
+  ],
+  "slot": "第3-4节",
+  "name": "会计学",
+  "weeks": "11-16",
+  "room": "A主204",
+  "classes": "25国贸[1-3]班+菁英班(92)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 3,
+  "rows": [
+   5
+  ],
+  "slot": "第9-10节",
+  "name": "人力资源管理前沿理论与实务",
+  "weeks": "1-3;6-9",
+  "room": "A5314",
+  "classes": "23人力01班(40)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 3,
+  "rows": [
+   5
+  ],
+  "slot": "第9-10节",
+  "name": "会计学",
+  "weeks": "12-16",
+  "room": "A主304",
+  "classes": "25国贸4班+数字经济[1-2]班(95)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 4,
+  "rows": [
+   2
+  ],
+  "slot": "第3-4节",
+  "name": "人力资源管理前沿理论与实务",
+  "weeks": "1-3;5-9",
+  "room": "A5301",
+  "classes": "23人力01班(40)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 4,
+  "rows": [
+   2,
+   3
+  ],
+  "slot": "第3-6节",
+  "name": "HR大数据分析与可视化",
+  "weeks": "11;13",
+  "room": "A实415",
+  "classes": "24人力01班(28)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 4,
+  "rows": [
+   3
+  ],
+  "slot": "第5-6节",
+  "name": "会计学",
+  "weeks": "3",
+  "room": "A主203",
+  "classes": "25国贸[1-3]班+菁英班(92)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 4,
+  "rows": [
+   3
+  ],
+  "slot": "第5-6节",
+  "name": "会计学",
+  "weeks": "15",
+  "room": "A主304",
+  "classes": "25国贸4班+数字经济[1-2]班(95)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 4,
+  "rows": [
+   4
+  ],
+  "slot": "第7-8节",
+  "name": "会计学",
+  "weeks": "1-3;5-15",
+  "room": "A主312",
+  "classes": "25国贸4班+数字经济[1-2]班(95)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 4,
+  "rows": [
+   5
+  ],
+  "slot": "第9-10节",
+  "name": "会计学",
+  "weeks": "1-2;5-15",
+  "room": "A主304",
+  "classes": "25国贸[1-3]班+菁英班(92)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 5,
+  "rows": [
+   1,
+   2
+  ],
+  "slot": "第1-4节",
+  "name": "应用统计学",
+  "weeks": "14-15",
+  "room": "A实403",
+  "classes": "25国贸[1-2]班+菁英班(63)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 5,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "HR大数据分析与可视化",
+  "weeks": "12-13",
+  "room": "A6203",
+  "classes": "24人力01班(28)",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "teach",
+  "day": 5,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "HR大数据分析与可视化",
+  "weeks": "14-16",
+  "room": "A3202",
+  "classes": "24人力01班(28)",
+  "type": "",
+  "teachers": ""
+ }
+];
+// ===== /AUTO-GEN =====
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================================
+// 数据定义（由 generate_timetable.py 从 courses.csv 自动生成）
+// ============================================================
+// 节次行定义（时间以城科为准）
+// 每行: [行号, 节次标签, 城科时间, 工商时间]
+const ROWS = [
+  {id:1,  label:"第1-2节", teach:"8:20-10:00", phd:"8:30-10:00"},
+  {id:2,  label:"第3-4节", teach:"10:30-12:10", phd:"10:20-11:50"},
+  {id:3,  label:"第5-6节", teach:"14:00-15:40", phd:"14:00-15:30"},
+  {id:4,  label:"第7-8节", teach:"16:00-17:40", phd:"15:50-17:20"},
+  {id:5,  label:"第9-10节", teach:"18:50-20:30", phd:"19:00-20:30"},
+];
+
+// 每门课占用的节次行（行id数组）
+// 工商连堂规则：上午1-4节=[1,2]（4节连堂但只占两行？不——1-4节是1,2,3,4四个节次，跨2行）
+// 说明：1-4节 = 第1-2节行 + 第3-4节行（2行跨度）
+// 1-2节=[1], 3-4节=[2], 5-6节=[3], 7-8节=[4], 9-10节=[5]
+// 上半/下半规则：上午1-4节 = [1,2]；下午1-4节 = [3,4]；三节连堂 2-4节=[1,2](第2-4节跨2行)...
+
+// 从 COURSE_DATA（CSV 生成）派生 PHD / TEACH
+const PHD   = COURSE_DATA.filter(c => c.kind === 'phd');
+const TEACH = COURSE_DATA.filter(c => c.kind === 'teach');
+
+// ============================================================
+// 工具
+// ============================================================
+// 判断某周是否在周次串内。支持 "1-4,6-13" / "05-06-07-08" / "11,13" / "2-13" / "12-15"
+function inWeeks(weekStr, week){
+  // 支持逗号/分号/顿号分隔的多段；每段可能是 "2-13"(范围)、"5-6-7-8"(多数字)、"5"(单数字)
+  const parts = weekStr.split(/[,，;；、]/);
+  for(let p of parts){
+    p = p.trim();
+    if(!p) continue;
+    const nums = p.split('-').map(s=>parseInt(s,10)).filter(n=>!isNaN(n));
+    if(nums.length===0) continue;
+    if(nums.length===2 && nums[1]>nums[0]+1){
+      // 范围：2-13，首尾相差>1
+      if(week>=nums[0] && week<=nums[1]) return true;
+    } else {
+      // 单数字或多数字连写（如 5 / 5-6-7-8）：逐个判断是否命中
+      if(nums.includes(week)) return true;
+    }
+  }
+  return false;
+}
+
+// 今天星期（1=周一..6=周六，周日返回0）
+function todayWeekday(){
+  const d = new Date();
+  let w = d.getDay(); // 0=周日
+  return w===0 ? 0 : w;
+}
+
+// ============================================================
+// 状态
+// ============================================================
+let curWeek = 2; // 默认显示第2周（有课的第一周，第1周基本无课）
+let filter = 'all'; // all | teach | phd
+const MAX_WEEK = 16;
+
+// ============================================================
+// 渲染
+// ============================================================
+function decideColor(name, kind){
+  // 按身份分色调：
+  //   在读(phd)=蓝色系（浅蓝底+深蓝字）——默认
+  //   任教(teach)=黄色系（浅黄底+深黄字），与在读课表一眼区分
+  // 格子浅色填充 + 文字白底衬托 + 同色系深色字（Cressy 方案，白字可读性无忧）
+  const bluePalette = [ /* 在读：浅蓝系 */
+    '#EAF4F8', /* 极浅蓝 */
+    '#E0EDF4', /* 浅蓝 */
+    '#DDECF3', /* 浅蓝 */
+    '#E2EBE8', /* 浅薄荷蓝 */
+    '#D8E8E8', /* 浅青蓝 */
+    '#D2E6EC', /* 中浅蓝 */
+    '#CBE0EA', /* 浅天蓝 */
+    '#C6DEE4', /* 中浅青蓝 */
+    '#B4D3DB', /* 中蓝 */
+    '#B2D3DC', /* 中蓝 */
+  ];
+  const redPalette = [ /* 任教：Auburn赤褐 #AA333C 红色系（整体偏浅，与蓝系协调；白底上深红字清晰） */
+    '#FBE7E6', /* 极浅红 */
+    '#F8D6D4', /* 浅红 */
+    '#F5C6C3', /* 浅红 */
+    '#F0B4B0', /* 浅玫红 */
+    '#ECA39F', /* 中浅红 */
+    '#E7918C', /* 中红 */
+    '#E1807B', /* 中红 */
+    '#DA6F69', /* 深红(柔和) */
+    '#D35F59', /* 深红 */
+    '#CC524C', /* 深红 */
+  ];
+  const palette = kind==='teach' ? redPalette : bluePalette;
+  const fg = kind==='teach' ? '#8A2931' : '#2E6E81'; // 同系深色字：任教暗赤褐/在读深蓝
+  let h=0;
+  for(let i=0;i<name.length;i++) h=(h*31 + name.charCodeAt(i))>>>0;
+  const bg = palette[h % palette.length];
+  return { bg, fg };
+}
+// 缓存颜色（按 身份+课程名 区分，任教/在读同名课各用各的色系）
+const colorCache = {};
+function colorOf(name, kind){
+  const key = kind + '|' + name;
+  if(!colorCache[key]) colorCache[key]=decideColor(name, kind);
+  return colorCache[key];
+}
+
+function render(){
+  const tby = document.getElementById('tby');
+  tby.innerHTML = '';
+  let hasAny = false;
+
+  ROWS.forEach((row, ri)=>{
+    const tr = document.createElement('tr');
+    // 时间列
+    const tdTime = document.createElement('td');
+    tdTime.className='time';
+    tdTime.innerHTML = `<b>${row.label}</b>`;
+    // 小屏显示时间段
+    const tspan = document.createElement('span');
+    tspan.style.display='none';
+    tdTime.appendChild(tspan);
+    tr.appendChild(tdTime);
+
+    for(let d=1; d<=6; d++){
+      const td = document.createElement('td');
+      // 收集该格内 任教 & 在读 课程
+      const teachHere = filter!=='phd' ? TEACH.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
+      const phdHere   = filter!=='teach' ? PHD.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
+
+      if(teachHere.length===0 && phdHere.length===0){
+        td.className='empty';
+        tr.appendChild(td);
+        continue;
+      }
+      hasAny = true;
+
+      // 都在一个格子 → 拆左右
+      const both = teachHere.length>0 && phdHere.length>0;
+      if(both){
+        td.innerHTML = '<div class="split"></div>';
+        const split = td.firstChild;
+        // 左:任教
+        const hl = document.createElement('div');
+        hl.className='half';
+        teachHere.forEach(c=>hl.appendChild(courseEl(c,'teach')));
+        // 右:在读
+        const hr = document.createElement('div');
+        hr.className='half';
+        phdHere.forEach(c=>hr.appendChild(courseEl(c,'phd')));
+        split.appendChild(hl); split.appendChild(hr);
+      } else {
+        const items = teachHere.length ? teachHere : phdHere;
+        const kind = teachHere.length ? 'teach' : 'phd';
+        items.forEach(c=>td.appendChild(courseEl(c,kind)));
+      }
+      tr.appendChild(td);
+    }
+    tby.appendChild(tr);
+  });
+
+  const nolec = document.getElementById('nolec');
+  nolec.style.display = hasAny ? 'none' : 'block';
+
+  // 更新顶栏
+  document.getElementById('wkShow').textContent = curWeek;
+
+  // 表头日期（超级课程表式：左上角=月份，下面每格=当天日期数字）
+  // 第1周周一 = 2026-09-07
+  const WEEK1_MON = new Date(2026, 8, 7); // 9月7日
+  const mon = new Date(WEEK1_MON.getTime() + (curWeek-1)*7*86400000); // 当前周周一
+  document.getElementById('hdrMonth').textContent = (mon.getMonth()+1) + '月';
+  document.querySelectorAll('.tb .hdr-date .dnum').forEach((el,i)=>{
+    const d = new Date(mon.getTime() + i*86400000);
+    el.textContent = d.getDate();
+  });
+
+  // 今天高亮（星期名 + 日期数字都标）
+  // 注：只有当「今天」真的落在当前显示的这一周内才高亮；
+  // 若显示的是其他周（如今还未到9/7第一周），则本周不标今天，避免一直停在周一。
+  const tw = todayWeekday();
+  const today = new Date();
+  const monStart = new Date(mon.getTime());            // 当前周周一
+  const satEnd   = new Date(mon.getTime() + 5*86400000); // 当前周周六
+  const inThisWeek = today >= monStart && today <= satEnd;
+  const ths = document.querySelectorAll('.tb th .day');
+  ths.forEach((th,i)=>{ // i=0对应周一
+    const wd = i+1;
+    th.classList.remove('is-today');
+    if(inThisWeek && wd===tw){
+      th.classList.add('is-today');
+    }
+  });
+  document.querySelectorAll('.tb .hdr-date .dnum').forEach((el)=>{
+    el.classList.remove('is-today');
+    const d = new Date(); // 今天
+    if(inThisWeek && tw>0 && d.getDate()===parseInt(el.textContent,10) && (d.getMonth()+1)===parseInt(document.getElementById('hdrMonth').textContent,10)){
+      el.classList.add('is-today');
+    }
+  });
+}
+
+function courseEl(c, kind){
+  const div = document.createElement('div');
+  div.className = 'course ' + kind;
+  const col = colorOf(c.name, kind); // 按身份取色系（任教黄/在读蓝）
+  const base = col.bg;       // 浅色底色
+  const fg   = col.fg;       // 同系深色字
+  div.style.setProperty('--c', base);
+  div.style.color = fg;      // 文字用同系深色
+
+  if(kind==='phd'){
+    // 在读：小点点纹理铺底（浅蓝底上用同系深蓝小点，清晰可见）
+    div.style.background = base + ' url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%226%22 height=%226%22><circle cx=%223%22 cy=%223%22 r=%221.4%22 fill=%22rgba(46,110,129,.35)%22/></svg>") repeat';
+  } else {
+    // 任教：纯浅黄底
+    div.style.background = base;
+  }
+
+  // 内容统一放进 .txt（纯色深底，保证波点格子上白字也清晰）
+  const txt = document.createElement('div');
+  txt.className='txt';
+
+  const nm = document.createElement('div');
+  nm.className='nm';
+  nm.textContent = c.name;
+  txt.appendChild(nm);
+
+  if(kind==='phd'){
+    // 博士：显示 老师 + 教室
+    if(c.teachers){
+      const t = document.createElement('div');
+      t.className='meta';
+      t.textContent = c.teachers;
+      txt.appendChild(t);
+    }
+    const rm = document.createElement('div');
+    rm.className='meta';
+    rm.textContent = c.room;
+    txt.appendChild(rm);
+  } else {
+    // 任教：显示 班级人数 + 教室
+    if(c.classes){
+      const cls = document.createElement('div');
+      cls.className='meta';
+      cls.textContent = c.classes;
+      txt.appendChild(cls);
+    }
+    const rm = document.createElement('div');
+    rm.className='meta';
+    rm.textContent = c.room;
+    txt.appendChild(rm);
+  }
+
+  div.appendChild(txt);
+
+  // 角标（教/博）放到格子右上角，用纯色深底
+  const tag = document.createElement('span');
+  tag.className='tag';
+  tag.textContent = kind==='teach' ? '教' : '博';
+  div.appendChild(tag);
+
+  // 点击格子 → 弹窗详情
+  div.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    showModal(c, kind);
+  });
+
+  return div;
+}
+
+// ============================================================
+// 课程详情弹窗（白底蓝字）
+// ============================================================
+const WEEK_CN = ['','周一','周二','周三','周四','周五','周六'];
+function showModal(c, kind){
+  const body = document.getElementById('modalBody');
+  // 节次：优先用生成时存的准确人类可读节次（c.slot，如"第2-4节"/"第5-6节、第7-8节"），
+  // 兼容旧数据 fallback 到行号映射
+  const rows = c.slot || c.rows.map(r=>ROWS.find(x=>x.id===r)).filter(Boolean)
+    .map(x=>x.label).join('、');
+  // 身份标签
+  const tagTxt = kind==='teach' ? '任教' : '在读';
+  const modal = document.getElementById('modal');
+  // 弹窗主色调：在读=蓝(默认)，任职=黄(.teach)
+  modal.classList.toggle('teach', kind==='teach');
+  // 附加行：博士=教师；任教=班级人数
+  const extra = kind==='phd'
+    ? (c.teachers ? `<div class="m-row"><span class="k">教师</span><span class="v">${c.teachers}</span></div>` : '')
+    : (c.classes ? `<div class="m-row"><span class="k">班级</span><span class="v">${c.classes}</span></div>` : '');
+
+  body.innerHTML = `
+    <div class="m-title">${c.name}</div>
+    <span class="m-tag">${tagTxt}</span>
+    <div class="m-rows">
+      <div class="m-row"><span class="k">星期</span><span class="v">${WEEK_CN[c.day]||('周'+(c.day))}</span></div>
+      <div class="m-row"><span class="k">节次</span><span class="v">${rows||'—'}</span></div>
+      <div class="m-row"><span class="k">教室</span><span class="v">${c.room||'—'}</span></div>
+      <div class="m-row"><span class="k">周次</span><span class="v">${c.weeks||'—'}</span></div>
+      ${extra}
+    </div>`;
+  modal.classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ============================================================
+// 事件
+// ============================================================
+document.getElementById('wkPrev').addEventListener('click', ()=>{
+  if(curWeek>1){ curWeek--; render(); }
+});
+document.getElementById('wkNext').addEventListener('click', ()=>{
+  if(curWeek<MAX_WEEK){ curWeek++; render(); }
+});
+['fAll','fTeach','fPhd'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', (e)=>{
+    const f = e.target.dataset.f;
+    filter = f;
+    document.querySelectorAll('.filter').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    if(document.getElementById('semester').style.display!=='none'){
+      renderSemester(); // 学期视图下筛选 → 更新学期表
+    } else {
+      render();
+    }
+  });
+});
+
+// ============================================================
+// 学期总览（甘特图）：横轴=第1~16周，纵轴=星期×节次
+// ============================================================
+const WEEK_NAMES = ['','周一','周二','周三','周四','周五','周六'];
+function renderSemester(){
+  const sem = document.getElementById('sem');
+  let all = filter==='teach' ? TEACH : (filter==='phd' ? PHD : COURSE_DATA);
+  // 过滤出有课的行：day(1-6) × row(1-5)，按时间顺序
+  const keys = {};
+  all.forEach(c=>{
+    c.rows.forEach(r=>{
+      const k = c.day+'|'+r;
+      if(!keys[k]) keys[k]={day:c.day,row:r,courses:[]};
+      keys[k].courses.push(c);
+    });
+  });
+  const rows = Object.values(keys).sort((a,b)=> a.day-b.day || a.row-b.row);
+  // 表头：第1~16周
+  let h = '<tr><th class="sem-rowhead">星期 / 节次</th>';
+  for(let w=1;w<=MAX_WEEK;w++) h += '<th class="sem-col">'+w+'</th>';
+  h += '</tr>';
+  rows.forEach(({day,row,courses})=>{
+    h += '<tr>';
+    h += '<td class="sem-rowhead">'+WEEK_NAMES[day]+'<small>'+ (ROWS.find(x=>x.id===row)?.label||'') +'</small></td>';
+    // 逐周确定该格课程
+    let bands = []; // {w0,w1,course}
+    let cur = null;
+    for(let w=1;w<=MAX_WEEK;w++){
+      const here = courses.filter(c=>inWeeks(c.weeks,w));
+      const c = here[0] || null; // 同格多课先取第一门
+      if(c && cur && cur.c===c){ cur.w1=w; }
+      else { if(cur) bands.push(cur); cur = c?{w0:w,w1:w,c:c}:null; }
+    }
+    if(cur) bands.push(cur);
+    // 渲染色带：用 colspan 跨列（从起始周到结束周）
+    let w = 1;
+    while(w<=MAX_WEEK){
+      const band = bands.find(b=>w>=b.w0 && w<=b.w1);
+      if(band){
+        const span = band.w1 - w + 1;
+        const col = colorOf(band.c.name, band.c.kind);
+        const isFirst = band.w0===1, isLast = band.w1===MAX_WEEK;
+        h += '<td class="sem-cell" colspan="'+span+'">';
+        h += '<div class="bar" data-c="'+encodeURIComponent(JSON.stringify({n:band.c.name,k:band.c.kind}))+'" style="background:'+col.bg+';color:'+col.fg+';'+(isFirst?'':'border-top-left-radius:0;border-bottom-left-radius:0;')+(isLast?'':'border-top-right-radius:0;border-bottom-right-radius:0;')+'">'+band.c.name+'</div>';
+        h += '</td>';
+        w = band.w1 + 1;
+      } else {
+        h += '<td class="sem-cell"></td>';
+        w++;
+      }
+    }
+    h += '</tr>';
+  });
+  sem.innerHTML = h;
+  // 点色带 → 弹窗
+  sem.querySelectorAll('.bar').forEach(b=>{
+    b.addEventListener('click', (e)=>{
+      const d = JSON.parse(decodeURIComponent(b.dataset.c));
+      const c = COURSE_DATA.find(x=>x.name===d.n && x.kind===d.k);
+      if(c){ showModal(c, c.kind); }
+      e.stopPropagation();
+    });
+  });
+}
+document.getElementById('fSem').addEventListener('click', function(e){
+  const isSem = this.classList.contains('active');
+  document.querySelectorAll('.filter').forEach(b=>b.classList.remove('active'));
+  if(isSem){
+    // 切回周视图
+    document.getElementById('fAll').classList.add('active');
+    document.getElementById('wrap').style.display='';
+    document.getElementById('semester').style.display='none';
+    render();
+  } else {
+    this.classList.add('active');
+    document.getElementById('wrap').style.display='none';
+    document.getElementById('semester').style.display='';
+    renderSemester();
+  }
+});
+
+// ============================================================
+// 左滑/右滑切换周次（按钮保留）
+// 左滑（手指向左）→ 下一周；右滑 → 上一周
+// ============================================================
+(function(){
+  let startX=0, startY=0, tracking=false;
+  const MIN_SWIPE = 50;  // 触发滑动的水平位移阈值px
+  const wrap = document.getElementById('tb') || document.querySelector('.wrap');
+  const modal = document.getElementById('modal');
+  wrap.addEventListener('touchstart', (e)=>{
+    if(modal.classList.contains('show')) return; // 弹窗打开时不触发
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY; tracking = true;
+  }, {passive:true});
+  // 不阻止 touchmove —— 让页面正常上下滚动；仅在 touchend 判定横向位移切周
+  wrap.addEventListener('touchend', (e)=>{
+    if(!tracking) return; tracking=false;
+    if(modal.classList.contains('show')) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    // 只认横向滑（横向位移大于纵向，且超过阈值）
+    if(Math.abs(dx) > MIN_SWIPE && Math.abs(dx) > Math.abs(dy)){
+      if(dx < 0){ // 左滑 → 下一周
+        if(curWeek<MAX_WEEK){ curWeek++; render(); }
+      } else {    // 右滑 → 上一周
+        if(curWeek>1){ curWeek--; render(); }
+      }
+    }
+  }, {passive:true});
+})();
+
+// 初始化
+render();
+</script>
+</body>
+</html>
