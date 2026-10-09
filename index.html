@@ -34,6 +34,16 @@
   }
   header h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
   header .sub{font-size:11px;opacity:.85;margin-top:2px}
+  /* 补课提示横幅 */
+  .makeup{
+    margin-top:8px;padding:6px 9px;border-radius:9px;
+    background:rgba(255,255,255,.16);border:1px dashed rgba(255,255,255,.5);
+    font-size:10.5px;line-height:1.6;color:#fff;
+    display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;
+  }
+  .makeup .mk-title{font-weight:800;opacity:.95}
+  .makeup .mk-item{opacity:.95}
+  .makeup b{font-weight:800}
   /* 控制行：周次切换 + 筛选 各占一半 */
   .control-row{
     display:flex;align-items:stretch;gap:8px;margin-top:10px;
@@ -256,6 +266,12 @@
       <button class="filter" id="fSem" style="margin-left:6px">学期</button>
     </div>
   </div>
+  <!-- 补课提示横幅（中秋国庆调休） -->
+  <div class="makeup" id="makeup">
+    <span class="mk-title">🔁 补课提示</span>
+    <span class="mk-item">9/20（周日）已补 <b>周二·高级管理研究方法</b>（原 10/6 第5周）</span>
+    <span class="mk-item">10/10（周六）补 <b>周三·中国马克思主义与当代</b>（原 10/7 第5周）</span>
+  </div>
 </header>
 
 <div class="wrap" id="wrap">
@@ -332,7 +348,7 @@ const COURSE_DATA = [
   ],
   "slot": "第2-4节",
   "name": "高级管理研究方法",
-  "weeks": "2-4;6-13",
+  "weeks": "2-4;6-12",
   "room": "明智楼110205",
   "classes": "",
   "type": "",
@@ -675,6 +691,7 @@ const COURSE_DATA = [
 
 
 
+
 // ============================================================
 // 数据定义（由 generate_timetable.py 从 courses.csv 自动生成）
 // ============================================================
@@ -974,8 +991,9 @@ function showModal(c, kind){
 
   // 放假/补课备注（博士课 中秋国庆顺延说明）
   const REMARKS = {
-    '高级管理研究方法|2': '10/6（第5周）逢国庆放假，该次课已于 9/20（周日）补上。',
-    '高级微观经济学|5': '9/25、10/2 两次逢中秋·国庆放假，已顺延至学期末。'
+    '高级管理研究方法|2': '10/6（第5周）逢国庆放假，该次课已于 9/20（周日）补上，故本周次不上课。',
+    '中国马克思主义与当代|3': '10/7（第5周）逢国庆放假，该次课于 10/10（周六）补上，故本周次不上课。',
+    '高级微观经济学|5': '9/25、10/2 两次逢中秋·国庆放假取消，已顺延至学期末（末次 12/18）。'
   };
   const rk = REMARKS[c.name + '|' + c.day];
   const remark = rk ? `<div class="m-note">📌 ${rk}</div>` : '';
