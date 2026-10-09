@@ -67,6 +67,13 @@
     font-size:13px;font-weight:600;cursor:pointer;
     transition:background .15s;
   }
+  /* 补课提示按钮：三行竖排居中 */
+  #fSem{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    line-height:1.15;font-size:11px;padding:5px 0;gap:1px;
+  }
+  #fSem .mk-icon{font-size:14px;line-height:1.1}
+  #fSem .mk-txt{font-size:11px;line-height:1.1}
   .filter.active{
     background:#fff;color:#529CAF;
     box-shadow:0 1px 4px rgba(0,0,0,.15);
@@ -260,7 +267,7 @@
       <button class="filter active" data-f="all" id="fAll">全部</button>
       <button class="filter" data-f="teach" id="fTeach">只看任教</button>
       <button class="filter" data-f="phd" id="fPhd">只看在读</button>
-      <button class="filter" id="fSem" style="margin-left:6px">🔁 补课提示</button>
+      <button class="filter" id="fSem" style="margin-left:6px"><span class="mk-icon">🔁</span><span class="mk-txt">补课</span><span class="mk-txt">提示</span></button>
     </div>
   </div>
 </header>
@@ -650,6 +657,7 @@ const COURSE_DATA = [
  }
 ];
 // ===== /AUTO-GEN =====
+
 
 
 
