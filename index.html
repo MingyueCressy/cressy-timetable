@@ -203,6 +203,8 @@
   .m-row{display:flex;align-items:baseline;gap:10px;padding:4px 0;font-size:13px}
   .m-row .k{flex:0 0 46px;color:var(--m-soft);font-size:12px;font-weight:700}
   .m-row .v{color:var(--m-ink);line-height:1.4;word-break:break-all}
+  .m-note{margin-top:8px;padding:7px 9px;border-radius:7px;background:rgba(230,168,23,.12);
+          border:1px solid rgba(230,168,23,.35);color:#8a6410;font-size:11.5px;line-height:1.5}
 
   /* ---------- 底部悬浮说明 ---------- */
   .foot{
@@ -315,7 +317,7 @@ const COURSE_DATA = [
   ],
   "slot": "第5-8节",
   "name": "高级宏观经济学",
-  "weeks": "2-13",
+  "weeks": "2-4;6-14",
   "room": "田家炳205",
   "classes": "",
   "type": "",
@@ -330,7 +332,7 @@ const COURSE_DATA = [
   ],
   "slot": "第2-4节",
   "name": "高级管理研究方法",
-  "weeks": "2-12",
+  "weeks": "2-4;6-13",
   "room": "明智楼110205",
   "classes": "",
   "type": "",
@@ -345,7 +347,7 @@ const COURSE_DATA = [
   ],
   "slot": "第1-4节",
   "name": "中国马克思主义与当代",
-  "weeks": "2-10",
+  "weeks": "2-4;6-11",
   "room": "田家炳306",
   "classes": "",
   "type": "",
@@ -375,7 +377,7 @@ const COURSE_DATA = [
   ],
   "slot": "第1-4节",
   "name": "高级微观经济学",
-  "weeks": "2-13",
+  "weeks": "2;5-15",
   "room": "田家炳205",
   "classes": "",
   "type": "",
@@ -641,6 +643,9 @@ const COURSE_DATA = [
  }
 ];
 // ===== /AUTO-GEN =====
+
+
+
 
 
 
@@ -967,6 +972,14 @@ function showModal(c, kind){
     ? (c.teachers ? `<div class="m-row"><span class="k">教师</span><span class="v">${c.teachers}</span></div>` : '')
     : (c.classes ? `<div class="m-row"><span class="k">班级</span><span class="v">${c.classes}</span></div>` : '');
 
+  // 放假/补课备注（博士课 中秋国庆顺延说明）
+  const REMARKS = {
+    '高级管理研究方法|2': '10/6（第5周）逢国庆放假，该次课已于 9/20（周日）补上。',
+    '高级微观经济学|5': '9/25、10/2 两次逢中秋·国庆放假，已顺延至学期末。'
+  };
+  const rk = REMARKS[c.name + '|' + c.day];
+  const remark = rk ? `<div class="m-note">📌 ${rk}</div>` : '';
+
   body.innerHTML = `
     <div class="m-title">${c.name}</div>
     <span class="m-tag">${tagTxt}</span>
@@ -976,6 +989,7 @@ function showModal(c, kind){
       <div class="m-row"><span class="k">教室</span><span class="v">${c.room||'—'}</span></div>
       <div class="m-row"><span class="k">周次</span><span class="v">${c.weeks||'—'}</span></div>
       ${extra}
+      ${remark}
     </div>`;
   modal.classList.add('show');
   document.getElementById('overlay').classList.add('show');
