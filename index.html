@@ -160,6 +160,12 @@
     padding:0 4px;line-height:14px;
   }
   .course.teach .tag{background:rgba(170,51,60,.15);color:#8A2931}
+  .course.proctor .txt{background:#fff}
+  .course.proctor .tag{background:rgba(123,63,160,.15);color:#7B3FA0}
+  .course.proctor::before{
+    content:"";position:absolute;top:0;left:0;
+    border-style:solid;border-width:0 0 14px 14px;border-color:transparent transparent rgba(123,63,160,.20) transparent;
+  }
   /* 任教：浅红底 + 小三角（Auburn深色淡化） */
   .course.teach{background:var(--teach)}
   .course.teach::before{
@@ -669,9 +675,24 @@ const COURSE_DATA = [
   "classes": "24人力01班(28)",
   "type": "",
   "teachers": ""
+ },
+ {
+  "kind": "proctor",
+  "day": 4,
+  "rows": [
+   2
+  ],
+  "slot": "第3-4节",
+  "name": "资产评估监考（25会计学专升本10-11班）",
+  "weeks": "12",
+  "room": "A主313",
+  "classes": "25会计学（专升本）[10-11]班(61人)",
+  "type": "",
+  "teachers": "魏萌（监考：杜明月、王嘉渝）"
  }
 ];
 // ===== /AUTO-GEN =====
+
 
 
 
@@ -732,8 +753,9 @@ const ROWS = [
 // 上半/下半规则：上午1-4节 = [1,2]；下午1-4节 = [3,4]；三节连堂 2-4节=[1,2](第2-4节跨2行)...
 
 // 从 COURSE_DATA（CSV 生成）派生 PHD / TEACH
-const PHD   = COURSE_DATA.filter(c => c.kind === 'phd');
-const TEACH = COURSE_DATA.filter(c => c.kind === 'teach');
+const PHD     = COURSE_DATA.filter(c => c.kind === 'phd');
+const TEACH   = COURSE_DATA.filter(c => c.kind === 'teach');
+const PROCTOR = COURSE_DATA.filter(c => c.kind === 'proctor');
 
 // ============================================================
 // 工具
@@ -784,6 +806,7 @@ let curWeek = initWeek();
 // 渲染
 // ============================================================
 function decideColor(name, kind){
+  if(kind==='proctor') return { bg:'#F3E6F7', fg:'#7B3FA0' };
   // 按身份分色调：
   //   在读(phd)=蓝色系（浅蓝底+深蓝字）——默认
   //   任教(teach)=黄色系（浅黄底+深黄字），与在读课表一眼区分
@@ -847,10 +870,11 @@ function render(){
     for(let d=1; d<=6; d++){
       const td = document.createElement('td');
       // 收集该格内 任教 & 在读 课程
-      const teachHere = filter!=='phd' ? TEACH.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
-      const phdHere   = filter!=='teach' ? PHD.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
+      const teachHere   = filter!=='phd' ? TEACH.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
+      const phdHere     = filter!=='teach' ? PHD.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
+      const proctorHere = PROCTOR.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek));
 
-      if(teachHere.length===0 && phdHere.length===0){
+      if(teachHere.length===0 && phdHere.length===0 && proctorHere.length===0){
         td.className='empty';
         tr.appendChild(td);
         continue;
@@ -871,10 +895,14 @@ function render(){
         hr.className='half';
         phdHere.forEach(c=>hr.appendChild(courseEl(c,'phd')));
         split.appendChild(hl); split.appendChild(hr);
+      } else if(teachHere.length===0 && phdHere.length===0){
+        proctorHere.forEach(c=>td.appendChild(courseEl(c,'proctor')));
       } else {
         const items = teachHere.length ? teachHere : phdHere;
         const kind = teachHere.length ? 'teach' : 'phd';
         items.forEach(c=>td.appendChild(courseEl(c,kind)));
+        // 监考：叠加显示（与课程同格共存）
+        if(teachHere.length || phdHere.length) proctorHere.forEach(c=>td.appendChild(courseEl(c,'proctor')));
       }
       tr.appendChild(td);
     }
@@ -932,6 +960,9 @@ function courseEl(c, kind){
   if(kind==='phd'){
     // 在读：小点点纹理铺底（浅蓝底上用同系深蓝小点，清晰可见）
     div.style.background = base + ' url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%226%22 height=%226%22><circle cx=%223%22 cy=%223%22 r=%221.4%22 fill=%22rgba(46,110,129,.35)%22/></svg>") repeat';
+  } else if(kind==='proctor'){
+    // 监考：纯浅紫底
+    div.style.background = base;
   } else {
     // 任教：纯浅黄底
     div.style.background = base;
@@ -958,6 +989,18 @@ function courseEl(c, kind){
     rm.className='meta';
     rm.textContent = c.room;
     txt.appendChild(rm);
+  } else if(kind==='proctor'){
+    // 监考：班级 + 教室
+    if(c.classes){
+      const cls = document.createElement('div');
+      cls.className='meta';
+      cls.textContent = c.classes;
+      txt.appendChild(cls);
+    }
+    const rm = document.createElement('div');
+    rm.className='meta';
+    rm.textContent = c.room;
+    txt.appendChild(rm);
   } else {
     // 任教：显示 班级人数 + 教室
     if(c.classes){
@@ -977,7 +1020,7 @@ function courseEl(c, kind){
   // 角标（教/博）放到格子右上角，用纯色深底
   const tag = document.createElement('span');
   tag.className='tag';
-  tag.textContent = kind==='teach' ? '教' : '博';
+  tag.textContent = kind==='teach' ? '教' : (kind==='proctor' ? '监' : '博');
   div.appendChild(tag);
 
   // 点击格子 → 弹窗详情
@@ -1000,14 +1043,17 @@ function showModal(c, kind){
   const rows = c.slot || c.rows.map(r=>ROWS.find(x=>x.id===r)).filter(Boolean)
     .map(x=>x.label).join('、');
   // 身份标签
-  const tagTxt = kind==='teach' ? '任教' : '在读';
+  const tagTxt = kind==='teach' ? '任教' : (kind==='proctor' ? '监考' : '在读');
   const modal = document.getElementById('modal');
   // 弹窗主色调：在读=蓝(默认)，任职=黄(.teach)
   modal.classList.toggle('teach', kind==='teach');
-  // 附加行：博士=教师；任教=班级人数
+  modal.classList.toggle('proctor', kind==='proctor');
+  // 附加行：博士=教师；任教/监考=班级人数
   const extra = kind==='phd'
     ? (c.teachers ? `<div class="m-row"><span class="k">教师</span><span class="v">${c.teachers}</span></div>` : '')
     : (c.classes ? `<div class="m-row"><span class="k">班级</span><span class="v">${c.classes}</span></div>` : '');
+  const extra2 = kind==='proctor' && c.teachers
+    ? `<div class="m-row"><span class="k">课程/监考</span><span class="v">${c.teachers}</span></div>` : '';
 
   // 放假/补课备注（博士课 中秋国庆顺延说明）
   const REMARKS = {
@@ -1027,6 +1073,7 @@ function showModal(c, kind){
       <div class="m-row"><span class="k">教室</span><span class="v">${c.room||'—'}</span></div>
       <div class="m-row"><span class="k">周次</span><span class="v">${c.weeks||'—'}</span></div>
       ${extra}
+      ${extra2}
       ${remark}
     </div>`;
   modal.classList.add('show');
