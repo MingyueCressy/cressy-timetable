@@ -397,7 +397,7 @@ const COURSE_DATA = [
   ],
   "slot": "第1-4节",
   "name": "高级微观经济学",
-  "weeks": "2;5-15",
+  "weeks": "2-13",
   "room": "田家炳205",
   "classes": "",
   "type": "",
@@ -692,6 +692,7 @@ const COURSE_DATA = [
  }
 ];
 // ===== /AUTO-GEN =====
+
 
 
 
@@ -1059,7 +1060,7 @@ function showModal(c, kind){
   const REMARKS = {
     '高级管理研究方法|2': '10/6（第5周）逢国庆放假，该次课已于 9/20（周日）补上，故本周次不上课。',
     '中国马克思主义与当代|3': '10/7（第5周）逢国庆放假，该次课于 10/10（周六）补上，故本周次不上课。',
-    '高级微观经济学|5': '9/25、10/2 两次逢中秋·国庆放假取消，已顺延至学期末（末次 12/18）。'
+    '高级微观经济学|5': '9/25、10/2 两次逢中秋·国庆放假，<b>实际并未行课</b>，且不补课；本课程仍按第2-13周上课（末次 12/4），第14、15周无课。'
   };
   const rk = REMARKS[c.name + '|' + c.day];
   const remark = rk ? `<div class="m-note">📌 ${rk}</div>` : '';
@@ -1193,6 +1194,14 @@ function showMakeup(){
       <div class="mk-card">
         <div class="mk-date">10/10（周六）</div>
         <div class="mk-info">补 · 周三 <b>中国马克思主义与当代</b><br><span class="mk-sub">原 10/7（第5周）· 田家炳306</span></div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-date">9/25、10/2</div>
+        <div class="mk-info">❌ 不补课 · 周五 <b>高级微观经济学</b><br><span class="mk-sub">第5周逢中秋·国庆放假，实际并未行课；该课仍按第2-13周上满，第14、15周无课</span></div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-date">10/5（周一）</div>
+        <div class="mk-info">✅ 补 · 周一 下午 <b>高级宏观经济学</b><br><span class="mk-sub">第5周国庆假期错过的一次课，已补；课程上至第14周（原第2-13周）</span></div>
       </div>
     </div>`;
   modal.classList.add('show');
