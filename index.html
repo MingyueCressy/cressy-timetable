@@ -162,6 +162,21 @@
   .course.teach .tag{background:rgba(170,51,60,.15);color:#8A2931}
   .course.proctor .txt{background:#fff}
   .course.proctor .tag{background:rgba(123,63,160,.15);color:#7B3FA0}
+  /* 考试：绿色系（浅绿底 + 深绿字 + 左上三角） */
+  .course.exam{background:#E1F3E4}
+  .course.exam .txt{background:#fff}
+  .course.exam .tag{background:rgba(31,122,58,.15);color:#1F7A3A}
+  .course.exam::before{
+    content:"";position:absolute;top:0;left:0;
+    border-style:solid;border-width:0 0 14px 14px;border-color:transparent transparent rgba(31,122,58,.22) transparent;
+  }
+  .modal.exam{
+    --m-ink:#1F7A3A;
+    --m-soft:#5FA877;
+    --m-accent:#2E8B57;
+    --m-line:#DCEEE1;
+    box-shadow:0 12px 40px rgba(31,122,58,.26);
+  }
   .course.proctor::before{
     content:"";position:absolute;top:0;left:0;
     border-style:solid;border-width:0 0 14px 14px;border-color:transparent transparent rgba(123,63,160,.20) transparent;
@@ -689,9 +704,41 @@ const COURSE_DATA = [
   "classes": "25会计学（专升本）[10-11]班(61人)",
   "type": "",
   "teachers": "魏萌（监考：杜明月、王嘉渝）"
+ },
+ {
+  "kind": "exam",
+  "day": 3,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-7节",
+  "name": "高级微观经济学考试",
+  "weeks": "15",
+  "room": "待通知",
+  "classes": "",
+  "type": "",
+  "teachers": ""
+ },
+ {
+  "kind": "exam",
+  "day": 3,
+  "rows": [
+   3,
+   4
+  ],
+  "slot": "第5-8节",
+  "name": "中国马克思主义与当代考试",
+  "weeks": "13",
+  "room": "明智楼110001",
+  "classes": "",
+  "type": "",
+  "teachers": ""
  }
 ];
 // ===== /AUTO-GEN =====
+
+
 
 
 
@@ -757,6 +804,7 @@ const ROWS = [
 const PHD     = COURSE_DATA.filter(c => c.kind === 'phd');
 const TEACH   = COURSE_DATA.filter(c => c.kind === 'teach');
 const PROCTOR = COURSE_DATA.filter(c => c.kind === 'proctor');
+const EXAM    = COURSE_DATA.filter(c => c.kind === 'exam');
 
 // ============================================================
 // 工具
@@ -808,6 +856,7 @@ let curWeek = initWeek();
 // ============================================================
 function decideColor(name, kind){
   if(kind==='proctor') return { bg:'#F3E6F7', fg:'#7B3FA0' };
+  if(kind==='exam')    return { bg:'#E1F3E4', fg:'#1F7A3A' };
   // 按身份分色调：
   //   在读(phd)=蓝色系（浅蓝底+深蓝字）——默认
   //   任教(teach)=黄色系（浅黄底+深黄字），与在读课表一眼区分
@@ -874,8 +923,9 @@ function render(){
       const teachHere   = filter!=='phd' ? TEACH.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
       const phdHere     = filter!=='teach' ? PHD.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek)) : [];
       const proctorHere = PROCTOR.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek));
+      const examHere    = EXAM.filter(c=>c.day===d && c.rows.includes(row.id) && inWeeks(c.weeks,curWeek));
 
-      if(teachHere.length===0 && phdHere.length===0 && proctorHere.length===0){
+      if(teachHere.length===0 && phdHere.length===0 && proctorHere.length===0 && examHere.length===0){
         td.className='empty';
         tr.appendChild(td);
         continue;
@@ -898,12 +948,16 @@ function render(){
         split.appendChild(hl); split.appendChild(hr);
       } else if(teachHere.length===0 && phdHere.length===0){
         proctorHere.forEach(c=>td.appendChild(courseEl(c,'proctor')));
+        examHere.forEach(c=>td.appendChild(courseEl(c,'exam')));
       } else {
         const items = teachHere.length ? teachHere : phdHere;
         const kind = teachHere.length ? 'teach' : 'phd';
         items.forEach(c=>td.appendChild(courseEl(c,kind)));
-        // 监考：叠加显示（与课程同格共存）
-        if(teachHere.length || phdHere.length) proctorHere.forEach(c=>td.appendChild(courseEl(c,'proctor')));
+        // 监考/考试：叠加显示（与课程同格共存）
+        if(teachHere.length || phdHere.length){
+          examHere.forEach(c=>td.appendChild(courseEl(c,'exam')));
+          proctorHere.forEach(c=>td.appendChild(courseEl(c,'proctor')));
+        }
       }
       tr.appendChild(td);
     }
@@ -961,8 +1015,8 @@ function courseEl(c, kind){
   if(kind==='phd'){
     // 在读：小点点纹理铺底（浅蓝底上用同系深蓝小点，清晰可见）
     div.style.background = base + ' url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%226%22 height=%226%22><circle cx=%223%22 cy=%223%22 r=%221.4%22 fill=%22rgba(46,110,129,.35)%22/></svg>") repeat';
-  } else if(kind==='proctor'){
-    // 监考：纯浅紫底
+  } else if(kind==='proctor' || kind==='exam'){
+    // 监考/考试：纯浅色底
     div.style.background = base;
   } else {
     // 任教：纯浅黄底
@@ -986,6 +1040,12 @@ function courseEl(c, kind){
       t.textContent = c.teachers;
       txt.appendChild(t);
     }
+    const rm = document.createElement('div');
+    rm.className='meta';
+    rm.textContent = c.room;
+    txt.appendChild(rm);
+  } else if(kind==='exam'){
+    // 考试：教室 + 时间
     const rm = document.createElement('div');
     rm.className='meta';
     rm.textContent = c.room;
@@ -1021,7 +1081,7 @@ function courseEl(c, kind){
   // 角标（教/博）放到格子右上角，用纯色深底
   const tag = document.createElement('span');
   tag.className='tag';
-  tag.textContent = kind==='teach' ? '教' : (kind==='proctor' ? '监' : '博');
+  tag.textContent = kind==='teach' ? '教' : (kind==='proctor' ? '监' : (kind==='exam' ? '考' : '博'));
   div.appendChild(tag);
 
   // 点击格子 → 弹窗详情
@@ -1037,6 +1097,17 @@ function courseEl(c, kind){
 // 课程详情弹窗（白底蓝字）
 // ============================================================
 const WEEK_CN = ['','周一','周二','周三','周四','周五','周六'];
+// 考试时间（Cressy 2026-11-20 确认）
+const EXAM_NOTES = {
+  '高级微观经济学考试': '教室以研究生院/授课教师最终通知为准。',
+  '中国马克思主义与当代考试': '携带学生证或一卡通 + 身份证，按时参加。'
+};
+const EXAM_TIME = {
+  '高级微观经济学考试': '2026-12-16（周三）14:00-16:00 · 第15周',
+  '中国马克思主义与当代考试': '2026-12-02（周三）14:00-17:00 · 第13周'
+};
+
+
 function showModal(c, kind){
   const body = document.getElementById('modalBody');
   // 节次：优先用生成时存的准确人类可读节次（c.slot，如"第2-4节"/"第5-6节、第7-8节"），
@@ -1044,15 +1115,18 @@ function showModal(c, kind){
   const rows = c.slot || c.rows.map(r=>ROWS.find(x=>x.id===r)).filter(Boolean)
     .map(x=>x.label).join('、');
   // 身份标签
-  const tagTxt = kind==='teach' ? '任教' : (kind==='proctor' ? '监考' : '在读');
+  const tagTxt = kind==='teach' ? '任教' : (kind==='proctor' ? '监考' : (kind==='exam' ? '考试' : '在读'));
   const modal = document.getElementById('modal');
   // 弹窗主色调：在读=蓝(默认)，任职=黄(.teach)
   modal.classList.toggle('teach', kind==='teach');
   modal.classList.toggle('proctor', kind==='proctor');
+  modal.classList.toggle('exam', kind==='exam');
   // 附加行：博士=教师；任教/监考=班级人数
   const extra = kind==='phd'
     ? (c.teachers ? `<div class="m-row"><span class="k">教师</span><span class="v">${c.teachers}</span></div>` : '')
-    : (c.classes ? `<div class="m-row"><span class="k">班级</span><span class="v">${c.classes}</span></div>` : '');
+    : (kind==='exam'
+        ? `<div class="m-row"><span class="k">考试时间</span><span class="v">${EXAM_TIME[c.name] || '见通知'}</span></div>`
+        : (c.classes ? `<div class="m-row"><span class="k">班级</span><span class="v">${c.classes}</span></div>` : ''));
   const extra2 = kind==='proctor' && c.teachers
     ? `<div class="m-row"><span class="k">课程/监考</span><span class="v">${c.teachers}</span></div>` : '';
 
@@ -1062,7 +1136,7 @@ function showModal(c, kind){
     '中国马克思主义与当代|3': '10/7（第5周）逢国庆放假，该次课于 10/10（周六）补上，故本周次不上课。',
     '高级微观经济学|5': '9/25、10/2 两次逢中秋·国庆放假，<b>实际并未行课</b>，且不补课；本课程仍按第2-13周上课（末次 12/4），第14、15周无课。'
   };
-  const rk = REMARKS[c.name + '|' + c.day];
+  const rk = REMARKS[c.name + '|' + c.day] || EXAM_NOTES[c.name];
   const remark = rk ? `<div class="m-note">📌 ${rk}</div>` : '';
 
   body.innerHTML = `
@@ -1184,7 +1258,7 @@ function showMakeup(){
   const modal = document.getElementById('modal');
   modal.classList.remove('teach');
   body.innerHTML = `
-    <div class="m-title">🔁 补课提示</div>
+    <div class="m-title">🔁 补课说明</div>
     <span class="m-tag">中秋 · 国庆调休</span>
     <div class="m-rows">
       <div class="mk-card">
@@ -1202,6 +1276,14 @@ function showMakeup(){
       <div class="mk-card">
         <div class="mk-date">10/5（周一）</div>
         <div class="mk-info">✅ 补 · 周一 下午 <b>高级宏观经济学</b><br><span class="mk-sub">第5周国庆假期错过的一次课，已补；课程上至第14周（原第2-13周）</span></div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-date">12/02（周三）</div>
+        <div class="mk-info">📝 <b>中国马克思主义与当代 · 期末考试</b><br><span class="mk-sub">14:00-17:00 · 明智楼110001 · 带学生证/一卡通 + 身份证</span></div>
+      </div>
+      <div class="mk-card">
+        <div class="mk-date">12/16（周三）</div>
+        <div class="mk-info">📝 <b>高级微观经济学 · 期末考试</b><br><span class="mk-sub">14:00-16:00 · 教室待通知</span></div>
       </div>
     </div>`;
   modal.classList.add('show');
